@@ -259,7 +259,7 @@ struct WebView {
 
 
       static if (__traits(compiles, callback(null, null, null))) webview_bind(handle, jsFunc.toStringz, &callback, extra);
-      else static assert(0, "Can't bind `", typeof(func).stringof, "` try with `void func(JSONValue[] args)`, for example.");
+      else static assert(0, "Can't bind `" ~ typeof(func).stringof ~ "` try with `void func(JSONValue[] args)`, for example.");
    }
 
 
