@@ -77,3 +77,16 @@ Install libwebview in your system:
 ```
 sudo cp guino/webview/build/library/libwebview.* /usr/local/lib/
 ```
+
+### Build libwebview on windows
+
+Libraries for windows are shipped inside the repository but you can build from source:
+
+```
+git clone --recurse-submodules  https://github.com/trikko/guino
+```
+
+Compile libwebview ([see also](https://github.com/webview/webview)):
+```
+guino/webview/script/build.bat build
+```
