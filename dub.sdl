@@ -1,0 +1,6 @@
+name "guino"
+description "Create your GUI in D with webview"
+authors "Andrea Fontana"
+copyright "Copyright © 2023, Andrea Fontana"
+license "MIT"
+libs "webview"
