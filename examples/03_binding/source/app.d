@@ -47,7 +47,7 @@ void alternate(JSONValue[] values)
 
 	writeln();
 
-	// Or you can bind tu a struct
+	// Or you can bind to a struct
 	struct MyArgs { string first; int second; }
 	auto args = WebView.parseArgs!MyArgs(values);
 
