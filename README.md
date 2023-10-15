@@ -1,4 +1,4 @@
-# guino
+# guino [![Build status](https://ci.appveyor.com/api/projects/status/vi5t1sv69iopb88d?svg=true)](https://ci.appveyor.com/project/trikko/guino)
 
 Unleash guino magic for effortless GUI development in D!
 
