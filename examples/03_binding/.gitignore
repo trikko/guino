@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/binding
+binding.so
+binding.dylib
+binding.dll
+binding.a
+binding.lib
+binding-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst

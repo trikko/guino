@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/minimal
+minimal.so
+minimal.dylib
+minimal.dll
+minimal.a
+minimal.lib
+minimal-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst

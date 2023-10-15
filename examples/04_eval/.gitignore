@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/eval
+eval.so
+eval.dylib
+eval.dll
+eval.a
+eval.lib
+eval-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
