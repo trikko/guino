@@ -36,20 +36,32 @@ struct WebView {
       else
       {
          import std.uuid;
-         auto uuid = "__eval__" ~ randomUUID().toString.replace("-", "_");
-         bindJs!(
-            function(JSONValue[] v)
-            {
-               static if (__traits(compiles, func(v[0], extra))) func(v[0], extra);
-               else func(v[0]);
-            }
-         )(uuid);
 
-         string jsCode = `var v = eval("` ~ js.replace(`\`, `\\`).replace(`"`, `\"`) ~ `"); ` ~ uuid ~ `(v);`;
-         eval(jsCode);
+         struct EvalPayload
+         {
+            void        *extra;
+            webview_t   handle;
+            string      uuid;
+         }
+
+         auto uuid = "__eval__" ~ randomUUID().toString.replace("-", "_");
+         EvalPayload *payload = new EvalPayload(extra, handle, uuid);
+
+         bindJs!(
+            (JSONValue[] v, void* extra)
+            {
+               EvalPayload *p = cast(EvalPayload*) extra;
+               webview_unbind(p.handle, p.uuid.toStringz);
+               static if (__traits(compiles, func(v[0], p.extra))) func(v[0], p.extra);
+               else func(v[0]);
+               p.destroy();
+            }
+         )
+         (uuid, cast(void*)payload);
+
+         eval(uuid ~ `(eval("` ~ js.replace(`\`, `\\`).replace(`"`, `\"`) ~ `"));`);
       }
    }
-
 
 
    class Element
