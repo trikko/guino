@@ -1,0 +1,6 @@
+name "minidom"
+description "A minimal D application."
+authors "Andrea Fontana"
+copyright "Copyright © 2023, Andrea Fontana"
+license "proprietary"
+dependency "guino" path="../../"
