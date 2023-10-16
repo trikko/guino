@@ -95,7 +95,7 @@ struct WebView {
 
    /++ Helper function to convert a file to data uri to embed inside html.
    + It works at compile-time so you must set source import paths on your project.
-   + See_also: WebView.toDataUri, WebView.fileAsDataUri, https://dlang.org/spec/expression.html#import_expressions
+   + See_Also: [toDataUri], [fileAsDataUri], https://dlang.org/spec/expression.html#import_expressions
    + ---
    + webview.byId("myimg").src = importAsDataUri!"image.jpg";
    +/
@@ -118,7 +118,7 @@ struct WebView {
    }
 
    /++ Helper function to convert bytes to data uri to embed inside html
-   + See_also: WebView.importAsDataUri, WebView.fileAsDataUri
+   + See_Also: [importAsDataUri], [fileAsDataUri]
    +/
    static auto toDataUri(const ubyte[] bytes, string mimeType = "application/octet-stream")
    {
@@ -127,7 +127,7 @@ struct WebView {
    }
 
    /++ Helper function to convert bytes to data uri to embed inside html
-   + See_also: WebView.importAsDataUri, WebView.toDataUri
+   + See_Also: [importAsDataUri], [toDataUri]
    +/
    static string fileAsDataUri(string file, string mimeType = "application/octet-stream")
    {
@@ -159,27 +159,27 @@ struct WebView {
 
 
    /++ Respond to a binding call from js.
-   + See_Also: WebView.resolve, Webview.reject
+   + See_Also: [resolve], [reject]
    +/
    void respond(string seq, bool resolved, JSONValue v) in(handle !is null, error_not_inited) { webview_return(handle, seq.toStringz, resolved?0:1, v.toString.toStringz); }
 
    /++ Resolve a js promise
-   + See_Also: WebView.respond, Webview.reject
+   + See_Also: [respond], [reject]
    +/
    void resolve(string seq, JSONValue v) in(handle !is null, error_not_inited) { respond(seq, 0, v); }
 
    /++ Reject a js promise
-   + See_Also: WebView.respond, Webview.resolve
+   + See_Also: [respond], [resolve]
    +/
    void reject(string seq, JSONValue v) in(handle !is null, error_not_inited) { respond(seq, 1, v); }
 
    /++ Removes a D callback that was previously set by `bind()`
-    +  See_Also: WebView.bindJs
+    +  See_Also: [bindJs]
     ++/
    void unbindJs(string name) in(handle !is null, error_not_inited) { webview_unbind(handle, name.toStringz); }
 
    /++ Create a callback in D for a js function.
-     + See_Also: WebView.response, WebView.resolve, WebView.reject, WebView.unbindJs
+     + See_Also: [response], [resolve], [reject], [unbindJs]
      + ---
      + // Simple callback without params
      + void hello() { ... }
@@ -239,7 +239,7 @@ struct WebView {
 
 
    /++ A helper function to parse args passed as JSONValue[]
-    + See_Also: WebView.bindJs
+    + See_Also: [bindJs]
     + ---
     + void myFunction(JSONValue[] arg)
     + {
@@ -279,7 +279,7 @@ struct WebView {
 
 
    /++ Search for an element in the dom, using a css selector. Returned element can forward calls to js.
-   + See_Also: WebView.byId
+   + See_Also: [byId]
    +/
    Element bySelector(string query)
    in(handle !is null, error_not_inited)
@@ -288,7 +288,7 @@ struct WebView {
    }
 
    /++  Search for an element in the dom, using id. Returned element can forward calls to js.
-   + See_Also: WebView.bySelector
+   + See_Also: [bySelector]
    + ---
    + webview.byId("myid").innerText = "Hi!";
    + webview.byId("myid").setAttribute("href", "https://example.com");
