@@ -59,7 +59,7 @@ struct WebView {
          )
          (uuid, cast(void*)payload);
 
-         eval(uuid ~ `(eval("` ~ js.replace(`\`, `\\`).replace(`"`, `\"`) ~ `"));`);
+         eval(uuid ~ `(eval('` ~ js.escapeJs() ~ `'));`);
       }
    }
 
@@ -89,7 +89,7 @@ struct WebView {
             static foreach(v; val)
             {
                static if (isIntegral!(typeof(v)) || isFloatingPoint!(typeof(v))) jsCode ~= v.to!string ~ ",";
-               else static if (isSomeString!(typeof(v))) jsCode ~= `'` ~ v.replace("'", `\'`) ~ `',`;
+               else static if (isSomeString!(typeof(v))) jsCode ~= `'` ~ v.escapeJs() ~ `',`;
                else throw new Exception("Can't assign " ~ T.stringof);
             }
 
@@ -127,13 +127,13 @@ struct WebView {
          jsCode ~= "if (" ~fullName ~ " != null && (" ~ fullName ~ " instanceof Function)) {\n";
          jsCode ~= js ~ "." ~ name;
          static if (isIntegral!T || isFloatingPoint!T) jsCode ~= val.to!string;
-         else static if (isSomeString!T) jsCode ~= `('` ~ val.replace("'", `\'`) ~ "'";
+         else static if (isSomeString!T) jsCode ~= `('` ~ val.escapeJs() ~ "'";
          else throw new Exception("Can't assign " ~ T.stringof);
          jsCode ~= ");";
 
          jsCode ~= "\n} else { \n";
          static if (isIntegral!T || isFloatingPoint!T) jsCode ~= js ~ "." ~ name ~ `=` ~ val.to!string ~ ";";
-         else static if (isSomeString!T) jsCode ~= js ~ "." ~ name ~ `= '` ~ val.replace("'", `\'`) ~ "';";
+         else static if (isSomeString!T) jsCode ~= js ~ "." ~ name ~ `= '` ~ val.escapeJs() ~ "';";
          else throw new Exception("Can't assign " ~ T.stringof);
 
          jsCode ~= "\n}";
@@ -147,8 +147,8 @@ struct WebView {
 
          string jsCode;
 
-         static if (isIntegral!T || isFloatingPoint!T) jsCode = js ~ ".setAttribute('" ~ name.replace("'", `\'`) ~ `', ` ~ val.to!string ~ ");";
-         else static if (isSomeString!T) jsCode = js ~ ".setAttribute('" ~ name.replace("'", `\'`) ~ `', '` ~ val.replace("'", `\'`) ~ "');";
+         static if (isIntegral!T || isFloatingPoint!T) jsCode = js ~ ".setAttribute('" ~ name.escapeJs() ~ `', ` ~ val.to!string ~ ");";
+         else static if (isSomeString!T) jsCode = js ~ ".setAttribute('" ~ name.escapeJs() ~ `', '` ~ val.escapeJs() ~ "');";
          else throw new Exception("Can't assign " ~ T.stringof);
 
          wv.eval(jsCode);
@@ -172,18 +172,18 @@ struct WebView {
 
    Elements bySelectorAll(string query)
    {
-      return new Elements(this, "document.querySelectorAll('" ~ query.replace("'", `\'`) ~ "')");
+      return new Elements(this, "document.querySelectorAll('" ~ query.escapeJs() ~ "')");
    }
 
 
    Element bySelector(string query)
    {
-      return new Element(this, "document.querySelector('" ~ query.replace("'", `\'`) ~ "')");
+      return new Element(this, "document.querySelector('" ~ query.escapeJs() ~ "')");
    }
 
    Element byId(string id)
    {
-      return new Element(this, "document.getElementById('" ~ id.replace("'", `\'`) ~ "')");
+      return new Element(this, "document.getElementById('" ~ id.escapeJs() ~ "')");
    }
 
    static string importAsDataUri(string file)(string mimeType = "application/octet-stream")
@@ -302,7 +302,13 @@ struct WebView {
 
 }
 
+string escapeJs(string s, char stringDelimeter = '\'')
+{
+   return s.replace(`\`, `\\`).replace(stringDelimeter, `\` ~ stringDelimeter);
+}
 
+
+private:
 
 enum string[string] mimeTypes =
 [
