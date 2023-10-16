@@ -50,11 +50,14 @@ struct WebView {
          bindJs!(
             (JSONValue[] v, void* extra)
             {
+               import core.memory : GC;
+
                EvalPayload *p = cast(EvalPayload*) extra;
                webview_unbind(p.handle, p.uuid.toStringz);
                static if (__traits(compiles, func(v[0], p.extra))) func(v[0], p.extra);
                else func(v[0]);
                p.destroy();
+               GC.free(p);
             }
          )
          (uuid, cast(void*)payload);
