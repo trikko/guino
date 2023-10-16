@@ -166,12 +166,12 @@ struct WebView {
    /++ Resolve a js promise
    + See_Also: [respond], [reject]
    +/
-   void resolve(string seq, JSONValue v) in(handle !is null, error_not_inited) { respond(seq, 0, v); }
+   void resolve(string seq, JSONValue v) in(handle !is null, error_not_inited) { respond(seq, true, v); }
 
    /++ Reject a js promise
    + See_Also: [respond], [resolve]
    +/
-   void reject(string seq, JSONValue v) in(handle !is null, error_not_inited) { respond(seq, 1, v); }
+   void reject(string seq, JSONValue v) in(handle !is null, error_not_inited) { respond(seq, false, v); }
 
    /++ Removes a D callback that was previously set by `bind()`
     +  See_Also: [bindJs]
@@ -411,7 +411,25 @@ struct WebView {
 /// Helper function to escape js strings
 string escapeJs(string s, char stringDelimeter = '\'')
 {
-   return s.replace(`\`, `\\`).replace(stringDelimeter, `\` ~ stringDelimeter);
+   import std.utf;
+
+   string result;
+
+   foreach(ref c; s.byCodeUnit)
+   {
+      if (c == '\\') result ~= `\\`;
+      else if (c == '"') result ~= `\"`;
+      else if (c == '\'') result ~= `\'`;
+      else if (c == '\t') result ~= `\t`;
+      else if (c == '\n') result ~= `\n`;
+      else if (c == '\r') result ~= `\r`;
+      else if (c == '\t') result ~= `\t`;
+      else if (c == '\u000B') result ~= `\v`;
+      else if (c == '\u000C') result ~= `\f`;
+      else result ~= c;
+   }
+
+   return result;
 }
 
 
