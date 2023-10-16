@@ -11,26 +11,51 @@ enum WEBVIEW_HINT_MAX=2;   // Width and height are maximum bounds
 enum WEBVIEW_HINT_FIXED=3; // Window size can not be changed by a user
 
 
+/// The main struct
 struct WebView {
 
    private webview_t handle = null;
 
-   @disable this();
+   /// Create a new WebView. enableDebug allow code inspection
+   this(bool enableDebug, void * window = null) { create(enableDebug, window); }
 
-   this(bool enableDebug, void * window = null) { handle = webview_create(enableDebug, window); }
+   /// Ditto
+   void create(bool enableDebug = false, void * window = null) in(handle is null, error_already_inited) { handle = webview_create(enableDebug, window);  }
 
-   void run() { webview_run(handle); }
-   void html(string data) { webview_set_html(handle, data.toStringz); }
+   /// Start the WebView. Be use to set size before.
+   void run() in(handle !is null, error_not_inited) { webview_run(handle); }
 
-   void navigate(string url) { webview_navigate(handle, url.toStringz); }
-   void unbindJs(string name) { webview_unbind(handle, name.toStringz); }
-   void title(string title) { webview_set_title(handle, title.toStringz);}
-   void size(int width, int height, int hints=WEBVIEW_HINT_NONE) { webview_set_size(handle, width, height, hints);}
-   void terminate() { webview_terminate(handle); }
-   void* window() { return webview_get_window(handle); }
+   /++ Set webview HTML directly.
+   + ---
+      webview.html = "<html><body>hello, world!</body></html>";
+   + ---
+   +/
+   void html(string data) in(handle !is null, error_not_inited) { webview_set_html(handle, data.toStringz); }
+
+   /// Navigates webview to the given URL. URL may be a properly encoded data URI.
+   void navigate(string url) in(handle !is null, error_not_inited) { webview_navigate(handle, url.toStringz); }
+
+   /// Set the window title
+   void title(string title) in(handle !is null, error_not_inited) { webview_set_title(handle, title.toStringz);}
+
+   /// Set the window size
+   void size(int width, int height, int hints = WEBVIEW_HINT_NONE) in(handle !is null, error_not_inited) { webview_set_size(handle, width, height, hints);}
+
+   ///
+   void terminate() { if(handle !is null) webview_terminate(handle); handle = null; }
+
+   /// Returns a handle to the native window
+   void* window() in(handle !is null, error_not_inited) { return webview_get_window(handle); }
 
 
+   /++ Eval some js code. When it is done, `func()` is called (optional)
+    + ---
+    + void callback(JSValue v) { writeln("Result from js: ", v); }
+    + webview.eval!callback("1+1");
+    + ---
+    +/
    void eval(alias func = null)(string js, void* extra = null)
+   in(handle !is null, error_not_inited)
    {
       static if (is (typeof(func) == typeof(null))) webview_eval(handle, js.toStringz);
       else
@@ -66,6 +91,206 @@ struct WebView {
       }
    }
 
+   /++ Helper function to convert a file to data uri to embed inside html
+   + It works at compile-time so you must set source import paths on your project.
+   + See_also: toDataUri, fileAsDataUri, https://dlang.org/spec/expression.html#import_expressions
+   + ---
+   + webview.byId("myimg").src = importAsDataUri!"image.jpg";
+   +/
+   static string importAsDataUri(string file)(string mimeType = "application/octet-stream")
+   {
+      import std.algorithm;
+      import std.encoding;
+      import std.base64;
+
+      auto mime = mimeType;
+      auto extIdx = file.lastIndexOf('.');
+      if (extIdx >= 0 && file[extIdx..$] in mimeTypes)
+         mime = mimeTypes[file[extIdx..$]];
+
+      auto bytes = import(file).representation;
+      auto bom = getBOM(bytes);
+      bytes = bytes[bom.sequence.length .. $];
+
+      return WebView.toDataUri(bytes, mime);
+   }
+
+   /++ Helper function to convert bytes to data uri to embed inside html
+   + See_also: importAsDataUri, fileAsDataUri
+   +/
+   static auto toDataUri(const ubyte[] bytes, string mimeType = "application/octet-stream")
+   {
+      import std.base64;
+      return ("data:" ~ mimeType ~ ";base64," ~ Base64.encode(bytes));
+   }
+
+   /++ Helper function to convert bytes to data uri to embed inside html
+   + See_also: importAsDataUri, toDataUri
+   +/
+   static string fileAsDataUri(string file, string mimeType = "application/octet-stream")
+   {
+      import std.file;
+      auto mime = mimeType;
+      auto extIdx = file.lastIndexOf('.');
+      if (extIdx >= 0 && file[extIdx..$] in mimeTypes)
+         mime = mimeTypes[file[extIdx..$]];
+
+      ubyte[] data = cast(ubyte[])std.file.read(file);
+      return toDataUri(data, mime);
+   }
+
+   /++ Injects JavaScript code at the initialization of the new page. Every time
+     + the webview will open a new page - this initialization code will be
+     + executed. It is guaranteed that code is executed before window.onload.
+     +/
+   void onInit(string js) in(handle !is null, error_not_inited) { webview_init(handle, js.toStringz); }
+
+   /// Ditto
+   void onInit(alias func)()
+   {
+      import std.uuid;
+      string uuid = "_init_" ~ randomUUID.toString().replace("-", "_");
+      static void proxy(JSONValue[]) { func(); }
+      bindJs!(proxy)(uuid);
+      onInit(uuid ~ "();");
+   }
+
+
+   /// Respond to a binding call from js.
+   void respond(string seq, bool resolved, JSONValue v) in(handle !is null, error_not_inited) { webview_return(handle, seq.toStringz, resolved?0:1, v.toString.toStringz); }
+
+   /// Resolve a js promise
+   void resolve(string seq, JSONValue v) in(handle !is null, error_not_inited) { respond(seq, 0, v); }
+
+   /// Reject a js promise
+   void reject(string seq, JSONValue v) in(handle !is null, error_not_inited) { respond(seq, 1, v); }
+
+   /++ Removes a D callback that was previously set by .bind()
+    +  See_Also: bindJs
+    ++/
+   void unbindJs(string name) in(handle !is null, error_not_inited) { webview_unbind(handle, name.toStringz); }
+
+   /++ Create a callback in D for a js function.
+     + See_Also: response, resolve, reject, unbindJs
+     + ---
+     + // Simple callback without params
+     + void hello() { ... }
+     +
+     + // Js arguments will be passed as JSON array
+     + void world(JSONValue[] args) { ... }
+     +
+     + // You can use the sequence arg to return a response.
+     + void reply(JSONValue[] args, string sequence) { ... resolve(sequence, JSONValue("Hello Js!")); }
+     +
+     + webview.bind!hello;          // If you call hello() from js, hello() from D will respond
+     + webview.bind!hello("test")   // If tou call test() from js, hello() from D will respond
+     + ---
+     +/
+   void bindJs(alias func)(string jsFunc = __traits(identifier, func), void* extra = null)
+   in(handle !is null, error_not_inited)
+   {
+
+      static if (__traits(compiles, func(JSONValue[].init, string.init, (void *).init)))
+         extern(C) void callback(const char *seq, const char *request, void *extra)
+         {
+            func(parseJSON(request.to!string).array, seq.to!string, extra);
+         }
+
+      else static if (__traits(compiles, func(JSONValue[].init, (void*).init)))
+         extern(C) void callback(const char *seq, const char *request, void *extra)
+         {
+            func(parseJSON(request.to!string).array, extra);
+         }
+
+
+      else static if (__traits(compiles, func(JSONValue[].init, string.init)))
+         extern(C) void callback(const char *seq, const char *request, void *extra)
+         {
+            func(parseJSON(request.to!string).array, seq.to!string);
+         }
+
+      else static if (__traits(compiles, func(JSONValue[].init)))
+         extern(C) void callback(const char *seq, const char *request, void *extra)
+         {
+            func(parseJSON(request.to!string).array);
+         }
+
+      else static if (__traits(compiles, func()))
+         extern(C) void callback(const char *seq, const char *request, void *extra)
+         {
+            func();
+         }
+
+
+      static if (__traits(compiles, callback(null, null, null))) webview_bind(handle, jsFunc.toStringz, &callback, extra);
+      else static assert(0, "Can't bind `" ~ typeof(func).stringof ~ "` try with `void func(JSONValue[] args)`, for example.");
+   }
+
+   /// Ditto
+   void bindJs(alias func)(void* extra) in(handle !is null, error_not_inited) { bindJs!func( __traits(identifier, func), extra); }
+
+
+   /++ A helper function to parse args passed as JSONValue[]
+    + See_Also: bindJs
+    + ---
+    + void myFunction(JSONValue[] arg)
+    + {
+    +    with(WebView.parseJsArgs!(int, "hello", string, "world")(args))
+    +    {
+    +       // Just like we have named args
+    +       writeln(hello);
+    +       writeln(world);
+    +    }
+    + }
+    + ---
+    +/
+   static auto parseJsArgs(T...)(JSONValue[] v)
+   {
+      import std.typecons : Tuple;
+
+      alias TUPLE = Tuple!T;
+      TUPLE ret;
+      bool 	fail;
+
+      static foreach(idx; 0..TUPLE.length)
+      {
+         fail = false;
+         if (idx < v.length)
+         {
+            try { mixin("ret[" ~ idx.to!string ~ "]") = v[idx].get!(typeof(TUPLE[idx])); }
+            catch (Exception e) { fail = true; }
+         }
+         else fail = true;
+
+         if (fail)
+            mixin("ret[" ~ idx.to!string ~ "]") = typeof(TUPLE[idx]).init;
+      }
+
+      return ret;
+   }
+
+
+   /++ Search for an element in the dom, using a css selector. Returned element can forward calls to js.
+   + See_Also: byId
+   +/
+   Element bySelector(string query)
+   in(handle !is null, error_not_inited)
+   {
+      return new Element(this, "document.querySelector('" ~ query.escapeJs() ~ "')");
+   }
+
+   /++  Search for an element in the dom, using id. Returned element can forward calls to js.
+   + See_Also: bySelector
+   + ---
+   + webview.byId("myid").innerText = "Hi!";
+   + webview.byId("myid").setAttribute("href", "https://example.com");
+   + ---
+   +/
+   Element byId(string id)
+   in(handle !is null, error_not_inited)
+   {
+      return new Element(this, "document.getElementById('" ~ id.escapeJs() ~ "')");
+   }
 
    class Element
    {
@@ -173,140 +398,9 @@ struct WebView {
 
    }
 
-   Elements bySelectorAll(string query)
-   {
-      return new Elements(this, "document.querySelectorAll('" ~ query.escapeJs() ~ "')");
-   }
-
-
-   Element bySelector(string query)
-   {
-      return new Element(this, "document.querySelector('" ~ query.escapeJs() ~ "')");
-   }
-
-   Element byId(string id)
-   {
-      return new Element(this, "document.getElementById('" ~ id.escapeJs() ~ "')");
-   }
-
-   static string importAsDataUri(string file)(string mimeType = "application/octet-stream")
-   {
-      import std.algorithm;
-      import std.encoding;
-      import std.base64;
-
-      auto mime = mimeType;
-      auto extIdx = file.lastIndexOf('.');
-      if (extIdx >= 0 && file[extIdx..$] in mimeTypes)
-         mime = mimeTypes[file[extIdx..$]];
-
-      auto bytes = import(file).representation;
-      auto bom = getBOM(bytes);
-      bytes = bytes[bom.sequence.length .. $];
-
-      return WebView.toDataUri(bytes, mime);
-   }
-
-   static auto toDataUri(const ubyte[] bytes, string mimeType = "application/octet-stream")
-   {
-      import std.base64;
-      return ("data:" ~ mimeType ~ ";base64," ~ Base64.encode(bytes));
-   }
-
-   static string fileAsDataUri(string file, string mimeType = "application/octet-stream")
-   {
-      import std.file;
-      auto mime = mimeType;
-      auto extIdx = file.lastIndexOf('.');
-      if (extIdx >= 0 && file[extIdx..$] in mimeTypes)
-         mime = mimeTypes[file[extIdx..$]];
-
-      ubyte[] data = cast(ubyte[])std.file.read(file);
-      return toDataUri(data, mime);
-   }
-
-   void onInit(string js) { webview_init(handle, js.toStringz); }
-   void onInit(alias func)()
-   {
-      import std.uuid;
-      string uuid = "_init_" ~ randomUUID.toString().replace("-", "_");
-      static void proxy(JSONValue[]) { func(); }
-      bindJs!(proxy)(uuid);
-      onInit(uuid ~ "();");
-   }
-
-   void respond(string seq, int status, JSONValue v) { webview_return(handle, seq.toStringz, status, v.toString.toStringz); }
-   void resolve(string seq, JSONValue v) { respond(seq, 0, v); }
-   void reject(string seq, JSONValue v) { respond(seq, 1, v); }
-
-   void bindJs(alias func)(void* extra) { bindJs!func( __traits(identifier, func), extra); }
-   void bindJs(alias func)(string jsFunc = __traits(identifier, func), void* extra = null)
-   {
-
-      static if (__traits(compiles, func(JSONValue[].init, string.init, (void *).init)))
-         extern(C) void callback(const char *seq, const char *request, void *extra)
-         {
-            func(parseJSON(request.to!string).array, seq.to!string, extra);
-         }
-
-      else static if (__traits(compiles, func(JSONValue[].init, (void*).init)))
-         extern(C) void callback(const char *seq, const char *request, void *extra)
-         {
-            func(parseJSON(request.to!string).array, extra);
-         }
-
-
-      else static if (__traits(compiles, func(JSONValue[].init, string.init)))
-         extern(C) void callback(const char *seq, const char *request, void *extra)
-         {
-            func(parseJSON(request.to!string).array, seq.to!string);
-         }
-
-      else static if (__traits(compiles, func(JSONValue[].init)))
-         extern(C) void callback(const char *seq, const char *request, void *extra)
-         {
-            func(parseJSON(request.to!string).array);
-         }
-
-      else static if (__traits(compiles, func()))
-         extern(C) void callback(const char *seq, const char *request, void *extra)
-         {
-            func();
-         }
-
-
-      static if (__traits(compiles, callback(null, null, null))) webview_bind(handle, jsFunc.toStringz, &callback, extra);
-      else static assert(0, "Can't bind `" ~ typeof(func).stringof ~ "` try with `void func(JSONValue[] args)`, for example.");
-   }
-
-
-   static auto parseJsArgs(T...)(JSONValue[] v)
-   {
-      import std.typecons : Tuple;
-
-      alias TUPLE = Tuple!T;
-      TUPLE ret;
-      bool 	fail;
-
-      static foreach(idx; 0..TUPLE.length)
-      {
-         fail = false;
-         if (idx < v.length)
-         {
-            try { mixin("ret[" ~ idx.to!string ~ "]") = v[idx].get!(typeof(TUPLE[idx])); }
-            catch (Exception e) { fail = true; }
-         }
-         else fail = true;
-
-         if (fail)
-            mixin("ret[" ~ idx.to!string ~ "]") = typeof(TUPLE[idx]).init;
-      }
-
-      return ret;
-   }
-
 }
 
+/// Helper function to escape js strings
 string escapeJs(string s, char stringDelimeter = '\'')
 {
    return s.replace(`\`, `\\`).replace(stringDelimeter, `\` ~ stringDelimeter);
@@ -314,6 +408,10 @@ string escapeJs(string s, char stringDelimeter = '\'')
 
 
 private:
+
+private immutable error_not_inited = "WebView is not initialized. Please call .create() method first.";
+private immutable error_already_inited = "Please call .terminate() first.";
+
 
 enum string[string] mimeTypes =
 [
