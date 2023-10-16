@@ -26,6 +26,7 @@ void main()
 	wv.bindJs!simple;
 	wv.bindJs!alternate("renamed");
 	wv.bindJs!promise;
+	wv.size(640, 480, WEBVIEW_HINT_FIXED);
 	wv.run();
 }
 

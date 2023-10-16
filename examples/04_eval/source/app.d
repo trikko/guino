@@ -19,6 +19,7 @@ void main()
 	wv = WebView(true);
 	wv.bindJs!action;
 	wv.html = html;
+	wv.size(640, 480, WEBVIEW_HINT_FIXED);
 	wv.run();
 
 }
