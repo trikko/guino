@@ -27,9 +27,7 @@ void d_function(JSONValue[] v) {
 	assert(v[0].str == "one");
 	assert(v[1].integer == 2);
 
-	struct Args { string first; int second; string third; }
-
-	Args args = WebView.parseArgs!Args(v);
+	auto args = WebView.parseJsArgs!(string, "first", int, "second", string, "third")(v);
 
 	assert(args.first == "one");
 	assert(args.second == 2);

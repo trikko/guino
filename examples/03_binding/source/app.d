@@ -45,14 +45,12 @@ void alternate(JSONValue[] values)
 	foreach(size_t k, v; values)
 		writeln("args #", k, " => ", v);
 
-	writeln();
+	// Or you can convert JSONValue[] into a tuple
+	// In this case we create a tuple with two fields (string first, int number)
+	auto args = WebView.parseJsArgs!(string, "first", int, "number")(values);
 
-	// Or you can bind to a struct
-	struct MyArgs { string first; int second; }
-	auto args = WebView.parseArgs!MyArgs(values);
-
-	writeln("first => ", args.first , ", second => ", args.second);
-	writeln();
+	// So you can use like this
+	writeln("args: ", args.first, ", ", args.number);
 }
 
 void promise(JSONValue[] v, string sequence)

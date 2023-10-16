@@ -263,40 +263,32 @@ struct WebView {
    }
 
 
-   static T parseArgs(T)(JSONValue[] v)
+   static auto parseJsArgs(T...)(JSONValue[] v)
    {
-      import std.traits;
-      alias names = FieldNameTuple!T;
+      import std.typecons : Tuple;
 
-      T ret;
+      alias TUPLE = Tuple!T;
+      TUPLE ret;
+      bool 	fail;
 
-      void parseArgsImpl(size_t idx = 0)(ref T ret)
+      static foreach(idx; 0..TUPLE.length)
       {
-         static if (idx >= names.length) return;
-         else
+         fail = false;
+         if (idx < v.length)
          {
-            bool fail = false;
-
-            if (idx < v.length)
-            {
-               try { mixin("ret." ~ names[idx]) = v[idx].get!(typeof(mixin("ret." ~ names[idx]))); }
-               catch (Exception e) { fail = true; }
-            }
-            else fail = true;
-
-            if (fail)
-               mixin("ret." ~ names[idx]) = typeof(mixin("ret." ~ names[idx])).init;
-
-            parseArgsImpl!(idx+1)(ret);
+            try { mixin("ret[" ~ idx.to!string ~ "]") = v[idx].get!(typeof(TUPLE[idx])); }
+            catch (Exception e) { fail = true; }
          }
+         else fail = true;
+
+         if (fail)
+            mixin("ret[" ~ idx.to!string ~ "]") = typeof(TUPLE[idx]).init;
       }
 
-      parseArgsImpl(ret);
       return ret;
    }
 
 }
-
 
 
 
