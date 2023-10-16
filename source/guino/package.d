@@ -5,10 +5,10 @@ import std.string;
 import std.conv : to;
 
 // Window size hints
-enum WEBVIEW_HINT_NONE=0;  // Width and height are default size
-enum WEBVIEW_HINT_MIN=1;   // Width and height are minimum bounds
-enum WEBVIEW_HINT_MAX=2;   // Width and height are maximum bounds
-enum WEBVIEW_HINT_FIXED=3; // Window size can not be changed by a user
+enum WEBVIEW_HINT_NONE=0;  /// Width and height are default size
+enum WEBVIEW_HINT_MIN=1;   /// Width and height are minimum bounds
+enum WEBVIEW_HINT_MAX=2;   /// Width and height are maximum bounds
+enum WEBVIEW_HINT_FIXED=3; /// Window size can not be changed by a user
 
 
 /// The main struct
@@ -16,13 +16,15 @@ struct WebView {
 
    private webview_t handle = null;
 
-   /// Create a new WebView. enableDebug allow code inspection
+   /++ Create a new WebView.
+   + Params: enableDebug = allow code inspection from webview
+   +/
    this(bool enableDebug, void * window = null) { create(enableDebug, window); }
 
    /// Ditto
    void create(bool enableDebug = false, void * window = null) in(handle is null, error_already_inited) { handle = webview_create(enableDebug, window);  }
 
-   /// Start the WebView. Be use to set size before.
+   /// Start the WebView. Be sure to set size before.
    void run() in(handle !is null, error_not_inited) { webview_run(handle); }
 
    /++ Set webview HTML directly.
@@ -91,9 +93,9 @@ struct WebView {
       }
    }
 
-   /++ Helper function to convert a file to data uri to embed inside html
+   /++ Helper function to convert a file to data uri to embed inside html.
    + It works at compile-time so you must set source import paths on your project.
-   + See_also: toDataUri, fileAsDataUri, https://dlang.org/spec/expression.html#import_expressions
+   + See_also: WebView.toDataUri, WebView.fileAsDataUri, https://dlang.org/spec/expression.html#import_expressions
    + ---
    + webview.byId("myimg").src = importAsDataUri!"image.jpg";
    +/
@@ -116,7 +118,7 @@ struct WebView {
    }
 
    /++ Helper function to convert bytes to data uri to embed inside html
-   + See_also: importAsDataUri, fileAsDataUri
+   + See_also: WebView.importAsDataUri, WebView.fileAsDataUri
    +/
    static auto toDataUri(const ubyte[] bytes, string mimeType = "application/octet-stream")
    {
@@ -125,7 +127,7 @@ struct WebView {
    }
 
    /++ Helper function to convert bytes to data uri to embed inside html
-   + See_also: importAsDataUri, toDataUri
+   + See_also: WebView.importAsDataUri, WebView.toDataUri
    +/
    static string fileAsDataUri(string file, string mimeType = "application/octet-stream")
    {
@@ -156,22 +158,28 @@ struct WebView {
    }
 
 
-   /// Respond to a binding call from js.
+   /++ Respond to a binding call from js.
+   + See_Also: WebView.resolve, Webview.reject
+   +/
    void respond(string seq, bool resolved, JSONValue v) in(handle !is null, error_not_inited) { webview_return(handle, seq.toStringz, resolved?0:1, v.toString.toStringz); }
 
-   /// Resolve a js promise
+   /++ Resolve a js promise
+   + See_Also: WebView.respond, Webview.reject
+   +/
    void resolve(string seq, JSONValue v) in(handle !is null, error_not_inited) { respond(seq, 0, v); }
 
-   /// Reject a js promise
+   /++ Reject a js promise
+   + See_Also: WebView.respond, Webview.resolve
+   +/
    void reject(string seq, JSONValue v) in(handle !is null, error_not_inited) { respond(seq, 1, v); }
 
-   /++ Removes a D callback that was previously set by .bind()
-    +  See_Also: bindJs
+   /++ Removes a D callback that was previously set by `bind()`
+    +  See_Also: WebView.bindJs
     ++/
    void unbindJs(string name) in(handle !is null, error_not_inited) { webview_unbind(handle, name.toStringz); }
 
    /++ Create a callback in D for a js function.
-     + See_Also: response, resolve, reject, unbindJs
+     + See_Also: WebView.response, WebView.resolve, WebView.reject, WebView.unbindJs
      + ---
      + // Simple callback without params
      + void hello() { ... }
@@ -231,7 +239,7 @@ struct WebView {
 
 
    /++ A helper function to parse args passed as JSONValue[]
-    + See_Also: bindJs
+    + See_Also: WebView.bindJs
     + ---
     + void myFunction(JSONValue[] arg)
     + {
@@ -271,7 +279,7 @@ struct WebView {
 
 
    /++ Search for an element in the dom, using a css selector. Returned element can forward calls to js.
-   + See_Also: byId
+   + See_Also: WebView.byId
    +/
    Element bySelector(string query)
    in(handle !is null, error_not_inited)
@@ -280,7 +288,7 @@ struct WebView {
    }
 
    /++  Search for an element in the dom, using id. Returned element can forward calls to js.
-   + See_Also: bySelector
+   + See_Also: WebView.bySelector
    + ---
    + webview.byId("myid").innerText = "Hi!";
    + webview.byId("myid").setAttribute("href", "https://example.com");
@@ -493,7 +501,7 @@ extern(C)  void webview_navigate(webview_t w, const char *url);
 extern(C)  void webview_set_html(webview_t w, const char *html);
 
 // Injects JavaScript code at the initialization of the new page. Every time
-// the webview will open a new page - this initialization code will be
+// the webview will open a new page this initialization code will be
 // executed. It is guaranteed that code is executed before window.onload.
 extern(C)  void webview_init(webview_t w, const char *js);
 
