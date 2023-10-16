@@ -10,8 +10,13 @@ void main()
 			<head>
 				<script>
 					onload = (event) => {
+
+						promise(1,1).then(
+							result => console.info('Promise WORKED: ' + result),
+							error => console.info('Promise FAILED: ' + error)
+						);
+
 						simple();
-						promise(1,1).then(result => console.info('async result:' + result));
 						renamed('a', 3);
 					}
 				</script>
@@ -52,6 +57,14 @@ void alternate(JSONValue[] values)
 
 	// So you can use like this
 	writeln("args: ", args.first, ", ", args.number);
+
+	// Using dlang "with" to add syntax sugar
+	with(WebView.parseJsArgs!(string, "param", int, "number")(values))
+	{
+		writeln("args: ", param, ", ", number);
+	}
+
+
 }
 
 void promise(JSONValue[] v, string sequence)
@@ -61,8 +74,7 @@ void promise(JSONValue[] v, string sequence)
 	long a = v[0].integer;
 	long b = v[1].integer;
 
-	JSONValue sum;
-	sum.integer = a+b;
+	string result = "The sum of %s+%s is %s".format(a, b, a+b);
 
 	// A copy of webview visible inside the thread below
 	WebView copy = wv;
@@ -74,12 +86,11 @@ void promise(JSONValue[] v, string sequence)
 		// Simulate a long work
 		Thread.sleep(1.seconds);
 
-		// Let's reply
-		copy.respond(
-			sequence, 	// This is an identifier used to link this response to the right call
-			0, 			// O means ok
-			sum			// Response, encodede as json
-		);
+		// Let's give a positive feedback :)
+		copy.resolve(sequence, JSONValue(result));
+
+		// Replace the line above with this one!
+		// copy.reject(sequence, JSONValue("oh no!"));
 
 	}).start();
 

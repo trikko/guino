@@ -2,7 +2,7 @@
 
 window.onload = (event) => {
    d_function("one", 2, "three");
-   d_promise(1,1).then( result =>  { document.getElementById("result").innerText = result; });
+   d_promise(1,2).then( result =>  { document.getElementById("result").innerText = result; });
 };
 
 

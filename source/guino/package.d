@@ -236,6 +236,8 @@ struct WebView {
    }
 
    void respond(string seq, int status, JSONValue v) { webview_return(handle, seq.toStringz, status, v.toString.toStringz); }
+   void resolve(string seq, JSONValue v) { respond(seq, 0, v); }
+   void reject(string seq, JSONValue v) { respond(seq, 1, v); }
 
    void bindJs(alias func)(void* extra) { bindJs!func( __traits(identifier, func), extra); }
    void bindJs(alias func)(string jsFunc = __traits(identifier, func), void* extra = null)

@@ -53,10 +53,19 @@ void eval_callback(JSONValue v)
 
 void d_promise_renamed(JSONValue[] v, string sequence)
 {
-	assert(v[0].integer == 1);
-	assert(v[1].integer == 1);
+	with(WebView.parseJsArgs!(int, "first", int, "second")(v))
+	{
+		assert(v[0].integer == 1);
+		assert(v[1].integer == 2);
 
-	wv.respond(sequence, 0, parseJSON("2"));
+		//with(args)
+		{
+			assert(first == 1);
+			assert(second == 2);
+
+			wv.resolve(sequence, JSONValue(first+second));
+		}
+	}
 }
 
 void check_all(JSONValue v)
@@ -64,7 +73,7 @@ void check_all(JSONValue v)
 	string data = v.str;
 	assert(data.canFind(`<div id="dynamic">testing opDispatch</div>`));
 	assert(data.canFind(`<div id="element">something</div>`));
-	assert(data.canFind(`<div id="result">2</div>`));
+	assert(data.canFind(`<div id="result">3</div>`));
 	assert(data.canFind(`<div id="from_js">test from d</div>`));
 
 	wv.terminate();
