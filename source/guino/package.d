@@ -257,20 +257,15 @@ struct WebView {
 
       alias TUPLE = Tuple!T;
       TUPLE ret;
-      bool 	fail;
 
-      static foreach(idx; 0..TUPLE.length)
+      foreach (i, ref arg; ret)
       {
-         fail = false;
-         if (idx < v.length)
+         if (i < v.length)
          {
-            try { mixin("ret[" ~ idx.to!string ~ "]") = v[idx].get!(typeof(TUPLE[idx])); }
-            catch (Exception e) { fail = true; }
+               try { arg = v[i].get!(typeof(arg)); }
+               catch (Exception e) { arg = typeof(arg).init;}
          }
-         else fail = true;
-
-         if (fail)
-            mixin("ret[" ~ idx.to!string ~ "]") = typeof(TUPLE[idx]).init;
+         else arg = typeof(arg).init;
       }
 
       return ret;

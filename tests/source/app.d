@@ -77,4 +77,30 @@ void check_all(JSONValue v)
 	assert(data.canFind(`<div id="from_js">test from d</div>`));
 
 	wv.terminate();
+
+	import std.json : parseJSON, JSONValue;
+
+	// Test case 1: Valid input
+	JSONValue[] input1 = [JSONValue("hello"), JSONValue(42), JSONValue(true)];
+	auto expected1 = tuple("hello", 42, true);
+	assert(wv.parseJsArgs!(string, int, bool)(input1) == expected1);
+
+	// Test case 2: Missing input
+	JSONValue[] input2 = [JSONValue("world"), JSONValue(3.14)];
+	auto expected2 = tuple("world", 3.14, false);
+	assert(wv.parseJsArgs!(string, double, bool)(input2) == expected2);
+
+	// Test case 3: Invalid input
+	JSONValue[] input3 = [JSONValue("foo"), JSONValue("bar"), JSONValue("baz")];
+	auto expected3 = tuple(int.init, bool.init, int.init);
+	assert(wv.parseJsArgs!(int, bool, int)(input3) == expected3);
+
+	// Test case 4: Named input
+	JSONValue[] input4 = [JSONValue(3), JSONValue("bar"), JSONValue("baz")];
+	auto ret = wv.parseJsArgs!(int, "test1", string, "str1", string, "str2")(input4);
+
+	assert(ret.test1 == 3);
+	assert(ret.str1 == "bar");
+	assert(ret.str2 == "baz");
+
 }
