@@ -21,7 +21,11 @@ struct WebView {
    this(bool enableDebug, void * window = null) { create(enableDebug, window); }
 
    /// Ditto
-   void create(bool enableDebug = false, void * window = null) in(handle is null, error_already_inited) { handle = webview_create(enableDebug, window);  }
+   void create(bool enableDebug = false, void * window = null) in(handle is null, error_already_inited)
+   {
+      handle = webview_create(enableDebug, window);
+      assert(handle !is null, "Webview library loaded, but failed to create window. Any missing webview dependencies?");
+   }
 
    /// Start the WebView. Be sure to set size before.
    void run() in(handle !is null, error_not_inited) { webview_run(handle); }

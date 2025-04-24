@@ -1,0 +1,44 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+name: Windows Build
+
+on:
+  push:
+    branches: [ "testing" ]
+  pull_request:
+    branches: [ "testing" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dlang-community/setup-dlang@4c99aa991ce7d19dd3064de0a4f2f6b2f152e2d7
+
+    - name: 'Build library'
+      run: |
+        cd webview
+        git submodule update --init
+        cmake -DWEBVIEW_BUILD=ON -DCMAKE_BUILD_TYPE=Release -DWEBVIEW_BUILD_EXAMPLES=OFF -DWEBVIEW_BUILD_DOCS=OFF -DWEBVIEW_BUILD_TESTS=OFF -DWEBVIEW_INSTALL_TARGETS=ON -DWEBVIEW_BUILD_AMALGAMATION=OFF .
+        cmake --build . --config Release
+        copy core/Release/webview* ..
+        cd ..
+
+    - name: Upload binary as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: webview
+        path: webview/core/Release/
+
+    - name: 'Build & Test'
+      run: |
+        dub build
+        cd tests
+        dub build

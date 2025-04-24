@@ -76,7 +76,6 @@ void check_all(JSONValue v)
 	assert(data.canFind(`<div id="result">3</div>`));
 	assert(data.canFind(`<div id="from_js">test from d</div>`));
 
-	wv.terminate();
 
 	import std.json : parseJSON, JSONValue;
 
@@ -103,4 +102,8 @@ void check_all(JSONValue v)
 	assert(ret.str1 == "bar");
 	assert(ret.str2 == "baz");
 
+	writeln("OK, passed.");
+
+	import core.stdc.stdlib : exit;
+	exit(0);
 }

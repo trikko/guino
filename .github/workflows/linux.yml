@@ -1,0 +1,39 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+name: Linux build
+
+on:
+  push:
+    branches: [ "testing" ]
+  pull_request:
+    branches: [ "testing" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dlang-community/setup-dlang@4c99aa991ce7d19dd3064de0a4f2f6b2f152e2d7
+
+    - name: 'Build library'
+      run: |
+        sudo apt install libgtk-4-dev libwebkitgtk-6.0-dev
+        cd webview
+        git submodule update --init
+        cmake -DWEBVIEW_BUILD=ON -DWEBVIEW_BUILD_EXAMPLES=OFF -DWEBVIEW_BUILD_DOCS=OFF -DWEBVIEW_BUILD_TESTS=OFF -DWEBVIEW_INSTALL_TARGETS=ON -DWEBVIEW_BUILD_AMALGAMATION=OFF .
+        cmake --build .
+        cp core/libwebview.so ..
+        sudo cmake --install .
+
+    - name: 'Build & Test'
+      run: |
+        dub build
+        cd tests
+        dub build
