@@ -6,9 +6,9 @@ name: Linux build
 
 on:
   push:
-    branches: [ "testing" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "testing" ]
+    branches: [ "main" ]
 
 permissions:
   contents: read
