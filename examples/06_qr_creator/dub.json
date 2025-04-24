@@ -1,0 +1,14 @@
+{
+	"authors": [
+		"Andrea Fontana"
+	],
+	"copyright": "Copyright © 2025, Andrea Fontana",
+	"dependencies": {
+		"qr": "~>1.0.3",
+		"guino": {"path": "../../" }
+	},
+	"description": "A minimal D application.",
+	"license": "proprietary",
+	"name": "06_qr_creator",
+	"stringImportPaths": [ "assets" ]
+}

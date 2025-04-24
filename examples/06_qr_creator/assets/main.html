@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRCode Generator</title>
+    <style>
+        :root {
+            --primary-color: #2e5807;
+            --bg-color: #f8fafc;
+            --text-color: #333;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        html, body {
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            box-sizing: border-box;
+        }
+
+        .container {
+            text-align: center;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            width: 80%;
+            max-width: 480px;
+        }
+
+        #qrcode-container {
+            width: 180px;
+            height: 180px;
+            margin: 20px auto;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+        }
+
+        input {
+            padding: 12px 15px;
+            width: 90%;
+            margin-top: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px #2e5807);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 24px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QRCode Generator</h1>
+        <input type="text" id="text-input" placeholder="Insert a text..." oninput="onTextChange()">
+        <div id="qrcode-container">
+            <div id="qrcode"></div>
+        </div>
+    </div>
+
+    <script>
+        function onTextChange() {
+            const text = document.getElementById('text-input').value;
+            const qrcodeContainer = document.getElementById('qrcode');
+
+            qrcodeContainer.innerHTML = '';
+
+            if (text.trim() !== '') {
+
+               // The function createQRCode is defined in the app.d file, not in the html
+               createQRCode(text).then(dataUri => {
+                  qrcodeContainer.innerHTML = `<img src="${dataUri}" alt="QR Code" style="max-width: 100%; max-height: 100%;">`;
+               });
+            }
+        }
+    </script>
+</body>
+</html>
