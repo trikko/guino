@@ -42,7 +42,7 @@ cmake -DWEBVIEW_BUILD=ON -DCMAKE_BUILD_TYPE=Release -DWEBVIEW_BUILD_EXAMPLES=OFF
 cmake --build . --config Release
 ```
 
-Install libwebview in your system:
+Install libwebview in your system (optional, you can also just keep the library in your exe's directory):
 ```
 cmake --install .
 ```
