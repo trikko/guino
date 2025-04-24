@@ -22,11 +22,11 @@ Minimal example:
   }
 ```
 
+### Dependencies
+Guino requires [webview](https://github.com/webview/webview) library to be present either in your executable's directory or installed in your system path. Pre-compiled binaries for Windows can be found in the [libs](https://github.com/trikko/guino/tree/main/libs) directory, while instructions for building the library from source are provided below.
+
 ### How does it works?
 More examples [here](https://github.com/trikko/guino/tree/main/examples)
-
-### Precompiled libraries
-For Windows users, precompiled DLLs are available in the [libs](https://github.com/trikko/guino/tree/main/libs) directory.
 
 ### Build libwebview
 
