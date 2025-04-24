@@ -436,30 +436,75 @@ private:
 private immutable error_not_inited = "WebView is not initialized. Please call .create() method first.";
 private immutable error_already_inited = "Please call .terminate() first.";
 
-
 enum string[string] mimeTypes =
 [
-   ".aac" : "audio/aac", ".abw" : "application/x-abiword", ".arc" : "application/x-freearc", ".avif" : "image/avif",
-   ".bin" : "application/octet-stream", ".bmp" : "image/bmp", ".bz" : "application/x-bzip", ".bz2" : "application/x-bzip2",
-   ".cda" : "application/x-cdf", ".csh" : "application/x-csh", ".css" : "text/css", ".csv" : "text/csv",
-   ".doc" : "application/msword", ".docx" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-   ".eot" : "application/vnd.ms-fontobject", ".epub" : "application/epub+zip", ".gz" : "application/gzip",
-   ".gif" : "image/gif", ".htm" : "text/html", ".html" : "text/html", ".ico" : "image/vnd.microsoft.icon",
-   ".ics" : "text/calendar", ".jar" : "application/java-archive", ".jpeg" : "image/jpeg", ".jpg" : "image/jpeg",
-   ".js" : "text/javascript", ".json" : "application/json", ".jsonld" : "application/ld+json", ".mid" : ".midi",
-   ".mjs" : "text/javascript", ".mp3" : "audio/mpeg",".mp4" : "video/mp4", ".mpeg" : "video/mpeg", ".mpkg" : "application/vnd.apple.installer+xml",
-   ".odp" : "application/vnd.oasis.opendocument.presentation", ".ods" : "application/vnd.oasis.opendocument.spreadsheet",
-   ".odt" : "application/vnd.oasis.opendocument.text", ".oga" : "audio/ogg", ".ogv" : "video/ogg", ".ogx" : "application/ogg",
-   ".opus" : "audio/opus", ".otf" : "font/otf", ".png" : "image/png", ".pdf" : "application/pdf", ".php" : "application/x-httpd-php",
-   ".ppt" : "application/vnd.ms-powerpoint", ".pptx" : "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-   ".rar" : "application/vnd.rar", ".rtf" : "application/rtf", ".sh" : "application/x-sh", ".svg" : "image/svg+xml",
-   ".swf" : "application/x-shockwave-flash", ".tar" : "application/x-tar", ".tif" : "image/tiff", ".tiff" : "image/tiff",
-   ".ts" : "video/mp2t", ".ttf" : "font/ttf", ".txt" : "text/plain", ".vsd" : "application/vnd.visio", ".wasm" : "application/wasm",
-   ".wav" : "audio/wav", ".weba" : "audio/webm", ".webm" : "video/webm", ".webp" : "image/webp", ".woff" : "font/woff", ".woff2" : "font/woff2",
-   ".xhtml" : "application/xhtml+xml", ".xls" : "application/vnd.ms-excel", ".xlsx" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-   ".xml" : "application/xml", ".xul" : "application/vnd.mozilla.xul+xml", ".zip" : "application/zip", ".3gp" : "video/3gpp",
-   ".3g2" : "video/3gpp2", ".7z" : "application/x-7z-compressed"
+   // Text/document formats
+   ".html" : "text/html", ".htm" : "text/html", ".shtml" : "text/html", ".css" : "text/css", ".xml" : "text/xml",
+   ".txt" : "text/plain", ".md" : "text/markdown", ".csv" : "text/csv", ".yaml" : "text/yaml", ".yml" : "text/yaml",
+   ".jad" : "text/vnd.sun.j2me.app-descriptor", ".wml" : "text/vnd.wap.wml", ".htc" : "text/x-component",
+
+   // Image formats
+   ".gif" : "image/gif", ".jpeg" : "image/jpeg", ".jpg" : "image/jpeg", ".png" : "image/png",
+   ".tif" : "image/tiff", ".tiff" : "image/tiff", ".wbmp" : "image/vnd.wap.wbmp",
+   ".ico" : "image/x-icon", ".jng" : "image/x-jng", ".bmp" : "image/x-ms-bmp",
+   ".svg" : "image/svg+xml", ".svgz" : "image/svg+xml", ".webp" : "image/webp",
+   ".avif" : "image/avif", ".heic" : "image/heic", ".heif" : "image/heif", ".jxl" : "image/jxl",
+
+   // Web fonts
+   ".woff" : "application/font-woff", ".woff2": "font/woff2", ".ttf" : "font/ttf", ".otf" : "font/otf",
+   ".eot" : "application/vnd.ms-fontobject",
+
+   // Archives and applications
+   ".jar" : "application/java-archive", ".war" : "application/java-archive", ".ear" : "application/java-archive",
+   ".json" : "application/json", ".hqx" : "application/mac-binhex40", ".doc" : "application/msword",
+   ".pdf" : "application/pdf", ".ps" : "application/postscript", ".eps" : "application/postscript",
+   ".ai" : "application/postscript", ".rtf" : "application/rtf", ".m3u8" : "application/vnd.apple.mpegurl",
+   ".xls" : "application/vnd.ms-excel", ".ppt" : "application/vnd.ms-powerpoint", ".wmlc" : "application/vnd.wap.wmlc",
+   ".kml" : "application/vnd.google-earth.kml+xml", ".kmz" : "application/vnd.google-earth.kmz",
+   ".7z" : "application/x-7z-compressed", ".cco" : "application/x-cocoa",
+   ".jardiff" : "application/x-java-archive-diff", ".jnlp" : "application/x-java-jnlp-file",
+   ".run" : "application/x-makeself", ".pl" : "application/x-perl", ".pm" : "application/x-perl",
+   ".prc" : "application/x-pilot", ".pdb" : "application/x-pilot", ".rar" : "application/x-rar-compressed",
+   ".rpm" : "application/x-redhat-package-manager", ".sea" : "application/x-sea",
+   ".swf" : "application/x-shockwave-flash", ".sit" : "application/x-stuffit", ".tcl" : "application/x-tcl",
+   ".tk" : "application/x-tcl", ".der" : "application/x-x509-ca-cert", ".pem" : "application/x-x509-ca-cert",
+   ".crt" : "application/x-x509-ca-cert", ".xpi" : "application/x-xpinstall", ".xhtml" : "application/xhtml+xml",
+   ".xspf" : "application/xspf+xml", ".zip" : "application/zip",
+   ".br" : "application/x-brotli", ".gz" : "application/gzip",
+   ".bz2" : "application/x-bzip2", ".xz" : "application/x-xz",
+
+   // Generic binary files
+   ".bin" : "application/octet-stream", ".exe" : "application/octet-stream", ".dll" : "application/octet-stream",
+   ".deb" : "application/octet-stream", ".dmg" : "application/octet-stream", ".iso" : "application/octet-stream",
+   ".img" : "application/octet-stream", ".msi" : "application/octet-stream", ".msp" : "application/octet-stream",
+   ".msm" : "application/octet-stream",
+
+   // Office documents
+   ".docx" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+   ".xlsx" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+   ".pptx" : "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+
+   // Audio formats
+   ".mid" : "audio/midi", ".midi" : "audio/midi", ".kar" : "audio/midi",
+   ".mp3" : "audio/mpeg", ".ogg" : "audio/ogg", ".m4a" : "audio/x-m4a",
+   ".ra" : "audio/x-realaudio", ".opus" : "audio/opus", ".aac" : "audio/aac",
+   ".flac" : "audio/flac",
+
+   // Video
+   ".3gpp" : "video/3gpp", ".3gp" : "video/3gpp", ".ts" : "video/mp2t", ".mp4" : "video/mp4",
+   ".mpeg" : "video/mpeg", ".mpg" : "video/mpeg", ".mov" : "video/quicktime",
+   ".webm" : "video/webm", ".flv" : "video/x-flv", ".m4v" : "video/x-m4v",
+   ".mng" : "video/x-mng", ".asx" : "video/x-ms-asf", ".asf" : "video/x-ms-asf",
+   ".wmv" : "video/x-ms-wmv", ".avi" : "video/x-msvideo",
+   ".mkv" : "video/x-matroska", ".ogv" : "video/ogg",
+
+   // Web development
+   ".js" : "application/javascript", ".wasm" : "application/wasm",
+   ".ts" : "application/typescript",
+   ".atom" : "application/atom+xml", ".rss" : "application/rss+xml",
+   ".mml" : "text/mathml"
 ];
+
 
 alias webview_t = void*;
 alias dispatchCallback = extern(C) void function(webview_t w, void* arg);
