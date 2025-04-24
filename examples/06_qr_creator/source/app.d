@@ -8,12 +8,12 @@ void main()
 {
 	wv = WebView(false);
 
+	// Make the createQRCode function available to javascript
+	wv.bindJs!createQRCode;
+
 	// Import html at compile time, as string
 	// You don't need to distribute the html file, it is embedded in the executable
-	string html = import("main.html");
-
-	wv.bindJs!createQRCode;
-	wv.html = html;
+	wv.html = import("main.html");
 
 	// Just to avoid the context menu
 	wv.onInit = "window.addEventListener('contextmenu', function (e) { e.preventDefault(); });";
