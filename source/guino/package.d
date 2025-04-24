@@ -102,16 +102,21 @@ struct WebView {
    + ---
    + webview.byId("myimg").src = importAsDataUri!"image.jpg";
    +/
-   static string importAsDataUri(string file)(string mimeType = "application/octet-stream")
+   static string importAsDataUri(string file)(string mimeType = null)
    {
       import std.algorithm;
       import std.encoding;
       import std.base64;
 
-      auto mime = mimeType;
-      auto extIdx = file.lastIndexOf('.');
-      if (extIdx >= 0 && file[extIdx..$] in mimeTypes)
-         mime = mimeTypes[file[extIdx..$]];
+      string mime = mimeType;
+
+      if (mime.length == 0)
+      {
+         auto extIdx = file.lastIndexOf('.');
+         if (extIdx >= 0 && file[extIdx..$] in mimeTypes)
+            mime = mimeTypes[file[extIdx..$]];
+      }
+
 
       auto bytes = import(file).representation;
       auto bom = getBOM(bytes);
@@ -123,22 +128,30 @@ struct WebView {
    /++ Helper function to convert bytes to data uri to embed inside html
    + See_Also: [importAsDataUri], [fileAsDataUri]
    +/
-   static auto toDataUri(const ubyte[] bytes, string mimeType = "application/octet-stream")
+   static auto toDataUri(const ubyte[] bytes, string mimeType = null)
    {
       import std.base64;
+
+      if (mimeType.length == 0)
+         mimeType = "application/octet-stream";
+
       return ("data:" ~ mimeType ~ ";base64," ~ Base64.encode(bytes));
    }
 
    /++ Helper function to convert bytes to data uri to embed inside html
    + See_Also: [importAsDataUri], [toDataUri]
    +/
-   static string fileAsDataUri(string file, string mimeType = "application/octet-stream")
+   static string fileAsDataUri(string file, string mimeType = null)
    {
       import std.file;
       auto mime = mimeType;
-      auto extIdx = file.lastIndexOf('.');
-      if (extIdx >= 0 && file[extIdx..$] in mimeTypes)
-         mime = mimeTypes[file[extIdx..$]];
+
+      if (mime.length == 0)
+      {
+         auto extIdx = file.lastIndexOf('.');
+         if (extIdx >= 0 && file[extIdx..$] in mimeTypes)
+            mime = mimeTypes[file[extIdx..$]];
+      }
 
       ubyte[] data = cast(ubyte[])std.file.read(file);
       return toDataUri(data, mime);
