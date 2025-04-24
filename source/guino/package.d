@@ -621,7 +621,7 @@ version(dynamic_loading) {
       }
 
       if (!inited) {
-         throw new Exception("Failed to load webview library/symbols. Tried: " ~ candidates.join(", "));
+         throw new Exception("Failed to load webview library/symbols.\nMake sure I can find the webview library in one of these paths:\n\n" ~ candidates.join("\n") ~ "\n\nCheck https://github.com/trikko/guino for more information.\n");
       }
 
       webview_create = cast(typeof(webview_create))getSymbol("webview_create");
