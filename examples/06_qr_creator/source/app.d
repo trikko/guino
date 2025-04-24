@@ -19,7 +19,7 @@ void main()
 	wv.onInit = "window.addEventListener('contextmenu', function (e) { e.preventDefault(); });";
 
 	// Set the size of the window
-	wv.size(640, 480, WEBVIEW_HINT_FIXED);
+	wv.size(800, 600, WEBVIEW_HINT_FIXED);
 
 	// Run the app
 	wv.run();
