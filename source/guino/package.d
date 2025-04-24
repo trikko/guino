@@ -457,88 +457,227 @@ enum string[string] mimeTypes =
    ".3g2" : "video/3gpp2", ".7z" : "application/x-7z-compressed"
 ];
 
-
 alias webview_t = void*;
-
-// Creates a new webview instance. If debug is non-zero - developer tools will
-// be enabled (if the platform supports them). The window parameter can be a
-// pointer to the native window wb.handle. If it's non-null - then child WebView
-// is embedded into the given parent window. Otherwise a new window is created.
-// Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
-// passed here. Returns null on failure. Creation can fail for various reasons
-// such as when required runtime dependencies are missing or when window creation
-// fails.
-extern(C) webview_t webview_create(int _debug, void *window);
-
-// Destroys a webview and closes the native window.
-extern(C)  void webview_destroy(webview_t w);
-
-// Runs the main loop until it's terminated. After this function exits - you
-// must destroy the webview.
-extern(C)  void webview_run(webview_t w);
-
-// Stops the main loop. It is safe to call this function from another other
-// background thread.
-extern(C)  void webview_terminate(webview_t w);
-
-// Posts a function to be executed on the main thread. You normally do not need
-// to call this function, unless you want to tweak the native window.
-extern(C)  void
-webview_dispatch(webview_t w, dispatchCallback, void *arg);
-
 alias dispatchCallback = extern(C) void function(webview_t w, void* arg);
+alias bindCallback = extern(C) void function(const char *seq, const char *req, void *arg);
 
-// Returns a native window wb.handle pointer. When using a GTK backend the pointer
-// is a GtkWindow pointer, when using a Cocoa backend the pointer is a NSWindow
-// pointer, when using a Win32 backend the pointer is a HWND pointer.
-extern(C)  void *webview_get_window(webview_t w);
+private:
+version(dynamic_loading) {
 
-// Updates the title of the native window. Must be called from the UI thread.
-extern(C)  void webview_set_title(webview_t w, const char *title);
+   __gshared LibHandle libHandle;
+   __gshared bool symbolsLoaded = false;
+
+   // Define the type for the dynamic library
+   version(Windows) {
+      import core.sys.windows.windows;
+      alias LibHandle = HMODULE;
+   } else version(Posix) {
+      alias LibHandle = void*;
+   }
+
+   // Functions to load the library
+   version(Windows) {
+      import core.sys.windows.windows;
+      import core.sys.windows.dll;
+
+      bool loadLibrary(string libName) {
+         libHandle = LoadLibraryA(libName.toStringz);
+         return libHandle !is null;
+      }
+
+      void* getSymbol(string name) {
+         return GetProcAddress(libHandle, name.toStringz);
+      }
+
+      void unloadLibrary() {
+         if(libHandle !is null) {
+               FreeLibrary(libHandle);
+               libHandle = null;
+         }
+      }
+   } else version(Posix) {
+      import core.sys.posix.dlfcn;
+
+      bool loadLibrary(string libName) {
+         libHandle = dlopen(libName.toStringz, RTLD_LAZY);
+         return libHandle !is null;
+      }
+
+      void* getSymbol(string name) {
+         return dlsym(libHandle, name.toStringz);
+      }
+
+      void unloadLibrary() {
+         if(libHandle !is null) {
+               dlclose(libHandle);
+               libHandle = null;
+         }
+      }
+   }
+
+   __gshared {
+      extern(C) webview_t function(int _debug, void *window) webview_create;
+      extern(C) void function(webview_t w) webview_destroy;
+      extern(C) void function(webview_t w) webview_run;
+      extern(C) void function(webview_t w) webview_terminate;
+      extern(C) void function(webview_t w, dispatchCallback, void *arg) webview_dispatch;
+      extern(C) void* function(webview_t w) webview_get_window;
+      extern(C) void function(webview_t w, const char *title) webview_set_title;
+      extern(C) void function(webview_t w, int width, int height, int hints) webview_set_size;
+      extern(C) void function(webview_t w, const char *url) webview_navigate;
+      extern(C) void function(webview_t w, const char *html) webview_set_html;
+      extern(C) void function(webview_t w, const char *js) webview_init;
+      extern(C) void function(webview_t w, const char *js) webview_eval;
+      extern(C) void function(webview_t w, const char *name, bindCallback, void *arg) webview_bind;
+      extern(C) void function(webview_t w, const char *name) webview_unbind;
+      extern(C) void function(webview_t w, const char *seq, int status, const char *result) webview_return;
+   }
 
 
-// Updates the size of the native window. See WEBVIEW_HINT constants.
-extern(C)  void webview_set_size(webview_t w, int width, int height,
-                                  int hints);
+   // Loads the symbols from the library
+   bool loadSymbols() {
+      if (symbolsLoaded) return true;
 
-// Navigates webview to the given URL. URL may be a properly encoded data URI.
-// Examples:
-// webview_navigate(w, "https://github.com/webview/webview");
-// webview_navigate(w, "data:text/html,%3Ch1%3EHello%3C%2Fh1%3E");
-// webview_navigate(w, "data:text/html;base64,PGgxPkhlbGxvPC9oMT4=");
-extern(C)  void webview_navigate(webview_t w, const char *url);
+      import std.path : buildNormalizedPath, dirName;
+      import std.file : getcwd, thisExePath;
+      import std.array : join;
 
-// Set webview HTML directly.
-// Example: webview_set_html(w, "<h1>Hello</h1>");
-extern(C)  void webview_set_html(webview_t w, const char *html);
+      string[] candidates;
 
-// Injects JavaScript code at the initialization of the new page. Every time
-// the webview will open a new page this initialization code will be
-// executed. It is guaranteed that code is executed before window.onload.
-extern(C)  void webview_init(webview_t w, const char *js);
+      version(Windows) candidates = [buildNormalizedPath(thisExePath.dirName, "webview.dll"), "webview.dll"];
+      else version(OSX) candidates = [buildNormalizedPath(thisExePath.dirName, "libwebview.dylib"), buildNormalizedPath(thisExePath.dirName, "..", "Frameworks", "libwebview.dylib"), "/System/Library/Frameworks/libwebview.dylib", "/opt/homebrew/lib/libwebview.dylib", "/usr/local/lib/libwebview.dylib", "/usr/lib/libwebview.dylib", "libwebview.dylib"];
+      else version(linux) candidates = [buildNormalizedPath(thisExePath.dirName, "libwebview.so"), "libwebview.so", "/usr/local/lib/libwebview.so", "/usr/lib/libwebview.so"];
+      else throw new Exception("Unsupported platform");
 
-// Evaluates arbitrary JavaScript code. Evaluation happens asynchronously, also
-// the result of the expression is ignored. Use RPC bindings if you want to
-// receive notifications about the results of the evaluation.
-extern(C)  void webview_eval(webview_t w, const char *js);
+      bool inited = false;
+      foreach (candidate; candidates) {
 
-// Binds a native C callback so that it will appear under the given name as a
-// global JavaScript function. Internally it uses webview_init(). The callback
-// receives a sequential request id, a request string and a user-provided
-// argument pointer. The request string is a JSON array of all the arguments
-// passed to the JavaScript function.
-extern(C)  void webview_bind(webview_t w, const char *name,
-                              bindCallback,
-                              void *arg);
+         if (loadLibrary(candidate)) {
+            inited = true;
+            break;
+         }
+      }
 
-alias bindCallback = extern(C) void function (const char *seq, const char *req, void *arg);
+      if (!inited) {
+         throw new Exception("Failed to load webview library/symbols. Tried: " ~ candidates.join(", "));
+      }
 
-// Removes a native C callback that was previously set by webview_bind.
-extern(C)  void webview_unbind(webview_t w, const char *name);
+      webview_create = cast(typeof(webview_create))getSymbol("webview_create");
+      webview_destroy = cast(typeof(webview_destroy))getSymbol("webview_destroy");
+      webview_run = cast(typeof(webview_run))getSymbol("webview_run");
+      webview_terminate = cast(typeof(webview_terminate))getSymbol("webview_terminate");
+      webview_dispatch = cast(typeof(webview_dispatch))getSymbol("webview_dispatch");
+      webview_get_window = cast(typeof(webview_get_window))getSymbol("webview_get_window");
+      webview_set_title = cast(typeof(webview_set_title))getSymbol("webview_set_title");
+      webview_set_size = cast(typeof(webview_set_size))getSymbol("webview_set_size");
+      webview_navigate = cast(typeof(webview_navigate))getSymbol("webview_navigate");
+      webview_set_html = cast(typeof(webview_set_html))getSymbol("webview_set_html");
+      webview_init = cast(typeof(webview_init))getSymbol("webview_init");
+      webview_eval = cast(typeof(webview_eval))getSymbol("webview_eval");
+      webview_bind = cast(typeof(webview_bind))getSymbol("webview_bind");
+      webview_unbind = cast(typeof(webview_unbind))getSymbol("webview_unbind");
+      webview_return = cast(typeof(webview_return))getSymbol("webview_return");
 
-// Responds to a binding call from the JS side. The ID/sequence number must
-// match the value passed to the binding wb.handler in order to respond to the
-// call and complete the promise on the JS side. A status of zero resolves
-// the promise, and any other value rejects it. The result must either be a
-// valid JSON value or an empty string for the primitive JS value "undefined".
-extern(C)  void webview_return(webview_t w, const char *seq, int status, const char *result);
+
+      // Is everything loaded?
+      if (webview_create is null || webview_destroy is null || webview_run is null ||
+         webview_terminate is null || webview_dispatch is null || webview_get_window is null ||
+         webview_set_title is null || webview_set_size is null || webview_navigate is null ||
+         webview_set_html is null || webview_init is null || webview_eval is null ||
+         webview_bind is null || webview_unbind is null || webview_return is null) {
+         unloadLibrary();
+         return false;
+      }
+
+      symbolsLoaded = true;
+      return true;
+   }
+
+   shared static this() { loadSymbols(); }
+   shared static ~this() { unloadLibrary(); }
+}
+
+else version(static_loading) {
+
+   // Creates a new webview instance. If debug is non-zero - developer tools will
+   // be enabled (if the platform supports them). The window parameter can be a
+   // pointer to the native window wb.handle. If it's non-null - then child WebView
+   // is embedded into the given parent window. Otherwise a new window is created.
+   // Depending on the platform, a GtkWindow, NSWindow or HWND pointer can be
+   // passed here. Returns null on failure. Creation can fail for various reasons
+   // such as when required runtime dependencies are missing or when window creation
+   // fails.
+   extern(C) webview_t webview_create(int _debug, void *window);
+
+   // Destroys a webview and closes the native window.
+   extern(C)  void webview_destroy(webview_t w);
+
+   // Runs the main loop until it's terminated. After this function exits - you
+   // must destroy the webview.
+   extern(C)  void webview_run(webview_t w);
+
+   // Stops the main loop. It is safe to call this function from another other
+   // background thread.
+   extern(C)  void webview_terminate(webview_t w);
+
+   // Posts a function to be executed on the main thread. You normally do not need
+   // to call this function, unless you want to tweak the native window.
+   extern(C)  void
+   webview_dispatch(webview_t w, dispatchCallback, void *arg);
+
+
+   // Returns a native window wb.handle pointer. When using a GTK backend the pointer
+   // is a GtkWindow pointer, when using a Cocoa backend the pointer is a NSWindow
+   // pointer, when using a Win32 backend the pointer is a HWND pointer.
+   extern(C)  void *webview_get_window(webview_t w);
+
+   // Updates the title of the native window. Must be called from the UI thread.
+   extern(C)  void webview_set_title(webview_t w, const char *title);
+
+
+   // Updates the size of the native window. See WEBVIEW_HINT constants.
+   extern(C)  void webview_set_size(webview_t w, int width, int height,
+                                    int hints);
+
+   // Navigates webview to the given URL. URL may be a properly encoded data URI.
+   // Examples:
+   // webview_navigate(w, "https://github.com/webview/webview");
+   // webview_navigate(w, "data:text/html,%3Ch1%3EHello%3C%2Fh1%3E");
+   // webview_navigate(w, "data:text/html;base64,PGgxPkhlbGxvPC9oMT4=");
+   extern(C)  void webview_navigate(webview_t w, const char *url);
+
+   // Set webview HTML directly.
+   // Example: webview_set_html(w, "<h1>Hello</h1>");
+   extern(C)  void webview_set_html(webview_t w, const char *html);
+
+   // Injects JavaScript code at the initialization of the new page. Every time
+   // the webview will open a new page this initialization code will be
+   // executed. It is guaranteed that code is executed before window.onload.
+   extern(C)  void webview_init(webview_t w, const char *js);
+
+   // Evaluates arbitrary JavaScript code. Evaluation happens asynchronously, also
+   // the result of the expression is ignored. Use RPC bindings if you want to
+   // receive notifications about the results of the evaluation.
+   extern(C)  void webview_eval(webview_t w, const char *js);
+
+   // Binds a native C callback so that it will appear under the given name as a
+   // global JavaScript function. Internally it uses webview_init(). The callback
+   // receives a sequential request id, a request string and a user-provided
+   // argument pointer. The request string is a JSON array of all the arguments
+   // passed to the JavaScript function.
+   extern(C)  void webview_bind(webview_t w, const char *name,
+                                 bindCallback,
+                                 void *arg);
+
+   // Removes a native C callback that was previously set by webview_bind.
+   extern(C)  void webview_unbind(webview_t w, const char *name);
+
+   // Responds to a binding call from the JS side. The ID/sequence number must
+   // match the value passed to the binding wb.handler in order to respond to the
+   // call and complete the promise on the JS side. A status of zero resolves
+   // the promise, and any other value rejects it. The result must either be a
+   // valid JSON value or an empty string for the primitive JS value "undefined".
+   extern(C)  void webview_return(webview_t w, const char *seq, int status, const char *result);
+}
+
+else static assert(false, "Unsupported configuration. Please use either dynamic_loading or static_loading.");
