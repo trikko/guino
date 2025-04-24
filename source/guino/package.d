@@ -47,7 +47,7 @@ struct WebView {
    void size(int width, int height, int hints = WEBVIEW_HINT_NONE) in(handle !is null, error_not_inited) { webview_set_size(handle, width, height, hints);}
 
    ///
-   void terminate() { if(handle !is null) webview_terminate(handle); handle = null; }
+   void terminate() { if(handle is null) return; webview_terminate(handle); webview_destroy(handle); handle = null; }
 
    /// Returns a handle to the native window
    void* window() in(handle !is null, error_not_inited) { return webview_get_window(handle); }

@@ -70,12 +70,13 @@ void d_promise_renamed(JSONValue[] v, string sequence)
 
 void check_all(JSONValue v)
 {
+	wv.terminate();
+
 	string data = v.str;
 	assert(data.canFind(`<div id="dynamic">testing opDispatch</div>`));
 	assert(data.canFind(`<div id="element">something</div>`));
 	assert(data.canFind(`<div id="result">3</div>`));
 	assert(data.canFind(`<div id="from_js">test from d</div>`));
-
 
 	import std.json : parseJSON, JSONValue;
 
@@ -103,7 +104,4 @@ void check_all(JSONValue v)
 	assert(ret.str2 == "baz");
 
 	writeln("OK, passed.");
-
-	import core.stdc.stdlib : exit;
-	exit(0);
 }
