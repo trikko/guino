@@ -421,9 +421,9 @@ string escapeJs(string s, char stringDelimeter = '\'')
       else if (c == '\t') result ~= `\t`;
       else if (c == '\n') result ~= `\n`;
       else if (c == '\r') result ~= `\r`;
-      else if (c == '\t') result ~= `\t`;
       else if (c == '\u000B') result ~= `\v`;
       else if (c == '\u000C') result ~= `\f`;
+      else if (c < 32 || c == 127) result ~= `\u` ~ format("%04x", c);
       else result ~= c;
    }
 
