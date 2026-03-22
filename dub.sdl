@@ -4,13 +4,14 @@ authors "Andrea Fontana"
 copyright "Copyright © 2023, Andrea Fontana"
 license "MIT"
 
-configuration "dynamic_loading" {
-   versions "dynamic_loading"
+configuration "static_loading" {
+    versions "static_loading"
+    sourceFiles-windows-x86_64 "$PACKAGE_DIR/precompiled/windows-x64/webview.lib"
+    lflags-linux-x86_64 "-L$PACKAGE_DIR/precompiled/linux-x86_64/" "-lwebview"
+    libs-linux "dl" "gtk-3" "webkit2gtk-4.1" "stdc++"
+    libs-windows "advapi32" "ole32" "shell32" "shlwapi" "user32" "version"
 }
 
-configuration "static_loading" {
-   versions "static_loading"
-   libs "webview"
-   lflags "/LIBPATH:$PACKAGE_DIR/libs" platform="windows"
-   copyFiles "libs/*.dll" platform="windows"
+configuration "dynamic_loading" {
+    versions "dynamic_loading"
 }
